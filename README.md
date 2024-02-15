@@ -1217,33 +1217,38 @@ From("pilots as p") // Specify the FROM table manually, can be useful for doing 
 From(models.TableNames.Pilots + " as p")
 
 // WHERE clause building
-Where("name=?", "John")
-models.PilotWhere.Name.EQ("John")
-And("age=?", 24)
-// No equivalent type safe query yet
-Or("height=?", 183)
-// No equivalent type safe query yet
-
-Where("(name=? and age=?) or (age=?)", "John", 5, 6)
-// Expr allows manual grouping of statements
-Where(
-  Expr(
-    models.PilotWhere.Name.EQ("John"),
-    Or2(models.PilotWhere.Age.EQ(5)),
-  ),
-  Or2(models.PilotAge),
+models.Pilots(
+  Where("name=?", "John"),
+  And("age=?", 24),
+  Or("height=?", 183),
+)
+// type safe version of above
+models.Pilots(
+  qm.Expr( 
+    qm.Expr(
+      models.PilotWhere.Name.EQ("John"),
+      models.PilotWhere.Age.EQ(24),
+    ),
+  )
+  qm.Or2(models.PilotWhere.Height.EQ(183)),
 )
 
-// WHERE IN clause building
-WhereIn("(name, age) in ?", "John", 24, "Tim", 33) // Generates: WHERE ("name","age") IN (($1,$2),($3,$4))
-WhereIn(fmt.Sprintf("(%s, %s) in ?", models.PilotColumns.Name, models.PilotColumns.Age), "John", 24, "Tim", 33)
-AndIn("weight in ?", 84)
-AndIn(models.PilotColumns.Weight + " in ?", 84)
-OrIn("height in ?", 183, 177, 204)
-OrIn(models.PilotColumns.Height + " in ?", 183, 177, 204)
 
-InnerJoin("pilots p on jets.pilot_id=?", 10)
-InnerJoin(models.TableNames.Pilots + " p on " + models.TableNames.Jets + "." + models.JetColumns.PilotID + "=?", 10)
+// WHERE IN clause building
+models.Pilots(
+  WhereIn("(name, age) in ?", "John", 24, "Tim", 33) // Generates: WHERE ("name","age") IN (($1,$2),($3,$4)),
+  WhereIn(fmt.Sprintf("(%s, %s) in ?", models.PilotColumns.Name, models.PilotColumns.Age), "John", 24, "Tim", 33),
+  AndIn("weight in ?", 84),
+  AndIn(models.PilotColumns.Weight + " in ?", 84),
+  OrIn("height in ?", 183, 177, 204),
+  OrIn(models.PilotColumns.Height + " in ?", 183, 177, 204),
+)
+
+// We skip in the following models.Pilots(...) 
+
+InnerJoin("pilots p on jets.pilot_id=?", 10),
+InnerJoin(models.TableNames.Pilots + " p on " + models.TableNames.Jets + "." + models.JetColumns.PilotID + "=?", 10),
+
 
 GroupBy("name")
 GroupBy("name like ? DESC, name", "John")
